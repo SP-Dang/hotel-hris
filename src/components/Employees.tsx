@@ -3,6 +3,8 @@ import { Search, Plus, Eye, Edit2, Download, X, Wifi, WifiOff } from 'lucide-rea
 import { employees as mockEmployees, departments as mockDepartments } from '../data/mockData';
 import { useSheetData, useApiStatus } from '../hooks/useSheetData';
 
+import { GoogleSheetsAPI } from '../services/googleSheetsApi';
+
 export default function Employees() {
   const { connected } = useApiStatus();
   const { data: employeesData, isLive } = useSheetData('10_Employees', mockEmployees);
@@ -12,6 +14,19 @@ export default function Employees() {
   const [deptFilter, setDeptFilter] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All');
   const [selected, setSelected] = useState<any>(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newEmployee, setNewEmployee] = useState<any>({
+    First_Name: '',
+    Last_Name: '',
+    Email: '',
+    Phone: '',
+    Department_ID: '',
+    Position_Name: '',
+    Employment_Type: 'Full-Time',
+    Employment_Status: 'Active',
+    Basic_Salary: 0,
+    Join_Date: new Date().toISOString().split('T')[0],
+  });
 
   const filtered = employeesData.filter((e: any) => {
     const name = `${e.Full_Name || ''} ${e.Employee_Code || ''} ${e.Email || ''}`.toLowerCase();
@@ -50,7 +65,7 @@ export default function Employees() {
             </div>
           )}
           <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"><Download size={16} />Export</button>
-          <button className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700"><Plus size={16} />Add Employee</button>
+          <button onClick={() => setShowAddModal(true)} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700"><Plus size={16} />Add Employee</button>
         </div>
       </div>
 
@@ -154,6 +169,107 @@ export default function Employees() {
                     <p className="text-sm text-gray-900 font-medium mt-0.5">{value}</p>
                   </div>
                 ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowAddModal(false)}>
+          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="p-6 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white z-10">
+              <h2 className="text-xl font-bold text-gray-900">Add New Employee</h2>
+              <button onClick={() => setShowAddModal(false)} className="p-2 hover:bg-gray-100 rounded-lg"><X size={20} /></button>
+            </div>
+            <div className="p-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
+                  <input type="text" value={newEmployee.First_Name} onChange={e => setNewEmployee({...newEmployee, First_Name: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none" required />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
+                  <input type="text" value={newEmployee.Last_Name} onChange={e => setNewEmployee({...newEmployee, Last_Name: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none" required />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                  <input type="email" value={newEmployee.Email} onChange={e => setNewEmployee({...newEmployee, Email: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none" required />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                  <input type="tel" value={newEmployee.Phone} onChange={e => setNewEmployee({...newEmployee, Phone: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Department *</label>
+                  <select value={newEmployee.Department_ID} onChange={e => setNewEmployee({...newEmployee, Department_ID: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none bg-white" required>
+                    <option value="">Select Department</option>
+                    {departmentsData.map((d: any) => <option key={d.Department_ID} value={d.Department_ID}>{d.Department_Name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Position *</label>
+                  <input type="text" value={newEmployee.Position_Name} onChange={e => setNewEmployee({...newEmployee, Position_Name: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none" required />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Employment Type</label>
+                  <select value={newEmployee.Employment_Type} onChange={e => setNewEmployee({...newEmployee, Employment_Type: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none bg-white">
+                    <option value="Full-Time">Full-Time</option>
+                    <option value="Part-Time">Part-Time</option>
+                    <option value="Contract">Contract</option>
+                    <option value="Intern">Intern</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                  <select value={newEmployee.Employment_Status} onChange={e => setNewEmployee({...newEmployee, Employment_Status: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none bg-white">
+                    <option value="Active">Active</option>
+                    <option value="On Probation">On Probation</option>
+                    <option value="Resigned">Resigned</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Basic Salary (₭)</label>
+                  <input type="number" value={newEmployee.Basic_Salary} onChange={e => setNewEmployee({...newEmployee, Basic_Salary: Number(e.target.value)})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Join Date *</label>
+                  <input type="date" value={newEmployee.Join_Date} onChange={e => setNewEmployee({...newEmployee, Join_Date: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none" required />
+                </div>
+              </div>
+              <div className="flex justify-end gap-3 mt-6 pt-6 border-t border-gray-100">
+                <button onClick={() => setShowAddModal(false)} className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
+                <button onClick={async () => {
+                  if (!newEmployee.First_Name || !newEmployee.Last_Name || !newEmployee.Email || !newEmployee.Department_ID || !newEmployee.Position_Name) {
+                    alert('Please fill in all required fields');
+                    return;
+                  }
+                  try {
+                    const employeeData = {
+                      ...newEmployee,
+                      Full_Name: `${newEmployee.First_Name} ${newEmployee.Last_Name}`,
+                      Employee_ID: `EMP${Date.now()}`,
+                      Employee_Code: `${newEmployee.Department_ID}-${Date.now().toString().slice(-4)}`,
+                    };
+                    await GoogleSheetsAPI.addEmployee(employeeData);
+                    alert('Employee added successfully!');
+                    setShowAddModal(false);
+                    setNewEmployee({
+                      First_Name: '',
+                      Last_Name: '',
+                      Email: '',
+                      Phone: '',
+                      Department_ID: '',
+                      Position_Name: '',
+                      Employment_Type: 'Full-Time',
+                      Employment_Status: 'Active',
+                      Basic_Salary: 0,
+                      Join_Date: new Date().toISOString().split('T')[0],
+                    });
+                  } catch (error) {
+                    alert('Failed to add employee: ' + (error as Error).message);
+                  }
+                }} className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700">Add Employee</button>
               </div>
             </div>
           </div>
