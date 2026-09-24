@@ -6,14 +6,18 @@ import { GoogleSheetsAPI } from '../services/googleSheetsApi';
 
 export default function Employees() {
   const { connected } = useApiStatus();
-  const {  employeesData, isLive } = useSheetData('10_Employees', mockEmployees);
-  const {  departmentsData } = useSheetData('02_Departments', mockDepartments);
+  const {  employeesData, isLive, loading } = useSheetData('10_Employees', mockEmployees);
+  const { data: departmentsData } = useSheetData('02_Departments', mockDepartments);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [deptFilter, setDeptFilter] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All');
   const [selected, setSelected] = useState<any>(null);
   const [showAddModal, setShowAddModal] = useState(false);
+
+  // Safety check - use empty array if data is undefined
+  const safeEmployeesData = employeesData || [];
+  const safeDepartmentsData = departmentsData || [];
   const [newEmployee, setNewEmployee] = useState<any>({
     Title: 'Mr',
     First_Name: '',
@@ -49,7 +53,7 @@ export default function Employees() {
     Remarks: '',
   });
 
-  const filtered = employeesData.filter((e: any) => {
+  const filtered = safeEmployeesData.filter((e: any) => {
     const name = `${e.Full_Name || ''} ${e.Employee_Code || ''} ${e.Email || ''}`.toLowerCase();
     const matchSearch = name.includes(searchTerm.toLowerCase());
     const matchDept = deptFilter === 'All' || e.Department_ID === deptFilter;
@@ -87,7 +91,7 @@ export default function Employees() {
     }
     try {
       const timestamp = Date.now();
-      const dept = departmentsData.find((d: any) => d.Department_ID === newEmployee.Department_ID);
+      const dept = safeDepartmentsData.find((d: any) => d.Department_ID === newEmployee.Department_ID);
       const employeeData = {
         ...newEmployee,
         Employee_ID: `EMP${timestamp}`,
@@ -110,7 +114,7 @@ export default function Employees() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Employees</h1>
-          <p className="text-gray-500 text-sm mt-1">10_Employees tab • {employeesData.length} records</p>
+          <p className="text-gray-500 text-sm mt-1">10_Employees tab • {safeEmployeesData.length} records</p>
         </div>
         <div className="flex items-center gap-2">
           {isLive ? (
@@ -137,7 +141,7 @@ export default function Employees() {
           </div>
           <select value={deptFilter} onChange={e => setDeptFilter(e.target.value)} className="px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-white outline-none">
             <option value="All">All Departments</option>
-            {departmentsData.map((d: any) => <option key={d.Department_ID} value={d.Department_ID}>{d.Department_Name}</option>)}
+            {safeDepartmentsData.map((d: any) => <option key={d.Department_ID} value={d.Department_ID}>{d.Department_Name}</option>)}
           </select>
           <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-white outline-none">
             <option value="All">All Status</option>
@@ -148,7 +152,7 @@ export default function Employees() {
         </div>
       </div>
 
-      <p className="text-sm text-gray-500">Showing {filtered.length} of {employeesData.length} employees</p>
+      <p className="text-sm text-gray-500">Showing {filtered.length} of {safeEmployeesData.length} employees</p>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
@@ -344,7 +348,7 @@ export default function Employees() {
                     <label className="block text-sm font-medium text-gray-700 mb-1">Department *</label>
                     <select value={newEmployee.Department_ID} onChange={e => setNewEmployee({...newEmployee, Department_ID: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none bg-white" required>
                       <option value="">Select Department</option>
-                      {departmentsData.map((d: any) => <option key={d.Department_ID} value={d.Department_ID}>{d.Department_Name}</option>)}
+                      {safeDepartmentsData.map((d: any) => <option key={d.Department_ID} value={d.Department_ID}>{d.Department_Name}</option>)}
                     </select>
                   </div>
                   <div>
