@@ -65,3 +65,16 @@ export const departments = [
     Active_Status: 'Active'
   }
 ];
+
+export const leaveRequests = [];
+export const payrollRecords = [];
+export const documents = [];
+export const jobOpenings = [];
+export const trainingRecords = [];
+export const assets = [];
+export const holidays = [];
+export const attendanceRecords = [];
+export const attendanceSummaries = [];
+export const leaveBalances = [];
+export const performanceReviews = [];
+export const applicants = [];
