@@ -43,9 +43,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.setItem('hris_user', JSON.stringify(result.user));
         
         // Update login tracking in background (don't wait for it)
-        GoogleSheetsAPI.updateLoginTracking(email).catch(err => {
-          console.warn('Failed to update login tracking:', err);
-        });
+        // GoogleSheetsAPI.updateLoginTracking(email).catch(err => {
+        // console.warn('Failed to update login tracking:', err);
+        // });
         
         return { success: true };
       } else {
