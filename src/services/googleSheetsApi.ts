@@ -16,7 +16,7 @@ let jsonpCounter = 0;
 /**
  * Make a JSONP request - bypasses CORS by using script tags
  */
-function jsonpFetch(url: string, timeout = 30000): Promise<any> {
+function jsonpFetch(url: string, timeout = 60000): Promise<any> {
   return new Promise((resolve, reject) => {
     const callbackName = `jsonp_callback_${++jsonpCounter}_${Date.now()}`;
     const script = document.createElement('script');
