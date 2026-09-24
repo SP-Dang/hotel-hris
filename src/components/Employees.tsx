@@ -6,8 +6,8 @@ import { GoogleSheetsAPI } from '../services/googleSheetsApi';
 
 export default function Employees() {
   const { connected } = useApiStatus();
-  const { data: employeesData, isLive } = useSheetData('10_Employees', mockEmployees);
-  const { data: departmentsData } = useSheetData('02_Departments', mockDepartments);
+  const {  employeesData, isLive } = useSheetData('10_Employees', mockEmployees);
+  const {  departmentsData } = useSheetData('02_Departments', mockDepartments);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [deptFilter, setDeptFilter] = useState('All');
@@ -15,7 +15,6 @@ export default function Employees() {
   const [selected, setSelected] = useState<any>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [newEmployee, setNewEmployee] = useState<any>({
-    // Personal Information
     Title: 'Mr',
     First_Name: '',
     Last_Name: '',
@@ -23,20 +22,14 @@ export default function Employees() {
     Date_of_Birth: '',
     Nationality: 'Lao',
     Marital_Status: 'Single',
-    
-    // Contact Information
     Phone: '',
     Email: '',
     Emergency_Contact_Name: '',
     Emergency_Contact_Phone: '',
-    
-    // Address
     Province: '',
     District: '',
     City: '',
     Address: '',
-    
-    // Employment Details
     Department_ID: '',
     Position_ID: '',
     Supervisor_Employee_ID: '',
@@ -46,20 +39,12 @@ export default function Employees() {
     Probation_End_Date: '',
     Confirmation_Date: '',
     Resignation_Date: '',
-    
-    // Compensation
     Basic_Salary: 0,
-    
-    // Banking
     Bank_Name: '',
     Bank_Account_Name: '',
     Bank_Account_No: '',
-    
-    // Tax & Social Security
     Tax_No: '',
     Social_Security_No: '',
-    
-    // Additional
     Photo_URL: '',
     Remarks: '',
   });
@@ -81,68 +66,40 @@ export default function Employees() {
 
   const fmt = (n: number) => new Intl.NumberFormat('en-LA').format(n);
 
+  const resetForm = () => {
+    setNewEmployee({
+      Title: 'Mr', First_Name: '', Last_Name: '', Gender: 'Male', Date_of_Birth: '',
+      Nationality: 'Lao', Marital_Status: 'Single', Phone: '', Email: '',
+      Emergency_Contact_Name: '', Emergency_Contact_Phone: '', Province: '', District: '',
+      City: '', Address: '', Department_ID: '', Position_ID: '', Supervisor_Employee_ID: '',
+      Employment_Type: 'Full-Time', Employment_Status: 'Active',
+      Join_Date: new Date().toISOString().split('T')[0], Probation_End_Date: '',
+      Confirmation_Date: '', Resignation_Date: '', Basic_Salary: 0, Bank_Name: '',
+      Bank_Account_Name: '', Bank_Account_No: '', Tax_No: '', Social_Security_No: '',
+      Photo_URL: '', Remarks: '',
+    });
+  };
+
   const handleAddEmployee = async () => {
-    // Validation
     if (!newEmployee.First_Name || !newEmployee.Last_Name || !newEmployee.Email || !newEmployee.Department_ID) {
       alert('Please fill in all required fields (First Name, Last Name, Email, Department)');
       return;
     }
-
     try {
-      // Generate Employee_ID and Employee_Code
       const timestamp = Date.now();
+      const dept = departmentsData.find((d: any) => d.Department_ID === newEmployee.Department_ID);
       const employeeData = {
         ...newEmployee,
         Employee_ID: `EMP${timestamp}`,
-        Employee_Code: `${newEmployee.Department_ID}-${timestamp.toString().slice(-4)}`,
+        Employee_Code: `${dept?.Department_Code || 'EMP'}-${timestamp.toString().slice(-4)}`,
         Full_Name: `${newEmployee.First_Name} ${newEmployee.Last_Name}`,
-        Department_Name: departmentsData.find((d: any) => d.Department_ID === newEmployee.Department_ID)?.Department_Name || '',
+        Department_Name: dept?.Department_Name || '',
         Position_Name: newEmployee.Position_ID || '',
-        Age: newEmployee.Date_of_Birth ? Math.floor((Date.now() - new Date(newEmployee.Date_of_Birth).getTime()) / 31557600000) : 0,
-        Year_of_Service: newEmployee.Join_Date ? Math.floor((Date.now() - new Date(newEmployee.Join_Date).getTime()) / 31557600000) : 0,
-        Probation_Status: newEmployee.Probation_End_Date ? 
-          (new Date(newEmployee.Probation_End_Date) > new Date() ? 'On Probation' : 'Confirmed') : 'Confirmed',
       };
-
       await GoogleSheetsAPI.addEmployee(employeeData);
       alert('Employee added successfully!');
       setShowAddModal(false);
-      
-      // Reset form
-      setNewEmployee({
-        Title: 'Mr',
-        First_Name: '',
-        Last_Name: '',
-        Gender: 'Male',
-        Date_of_Birth: '',
-        Nationality: 'Lao',
-        Marital_Status: 'Single',
-        Phone: '',
-        Email: '',
-        Emergency_Contact_Name: '',
-        Emergency_Contact_Phone: '',
-        Province: '',
-        District: '',
-        City: '',
-        Address: '',
-        Department_ID: '',
-        Position_ID: '',
-        Supervisor_Employee_ID: '',
-        Employment_Type: 'Full-Time',
-        Employment_Status: 'Active',
-        Join_Date: new Date().toISOString().split('T')[0],
-        Probation_End_Date: '',
-        Confirmation_Date: '',
-        Resignation_Date: '',
-        Basic_Salary: 0,
-        Bank_Name: '',
-        Bank_Account_Name: '',
-        Bank_Account_No: '',
-        Tax_No: '',
-        Social_Security_No: '',
-        Photo_URL: '',
-        Remarks: '',
-      });
+      resetForm();
     } catch (error) {
       alert('Failed to add employee: ' + (error as Error).message);
     }
@@ -176,7 +133,7 @@ export default function Employees() {
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="flex-1 relative">
             <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input type="text" placeholder="Search name, code, email..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none" />
+            <input type="text" placeholder="Search name, code, email..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm outline-none" />
           </div>
           <select value={deptFilter} onChange={e => setDeptFilter(e.target.value)} className="px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-white outline-none">
             <option value="All">All Departments</option>
@@ -257,15 +214,15 @@ export default function Employees() {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {[
-                  ['Gender', selected.Gender], ['Date of Birth', selected.Date_of_Birth], ['Age', selected.Age ? `${selected.Age} years` : ''],
-                  ['Nationality', selected.Nationality], ['Marital Status', selected.Marital_Status], ['Phone', selected.Phone],
-                  ['Email', selected.Email], ['Province', selected.Province], ['District', selected.District],
-                  ['Address', selected.Address], ['Employment Type', selected.Employment_Type], ['Join Date', selected.Join_Date],
-                  ['Probation End', selected.Probation_End_Date], ['Probation Status', selected.Probation_Status], ['Weekly Off', selected.Weekly_Off_Days],
-                  ['Basic Salary', selected.Basic_Salary ? `₭${fmt(Number(selected.Basic_Salary))}` : ''], ['Bank', `${selected.Bank_Name || ''} - ${selected.Bank_Account_No || ''}`],
+                  ['Gender', selected.Gender], ['Date of Birth', selected.Date_of_Birth], ['Nationality', selected.Nationality],
+                  ['Marital Status', selected.Marital_Status], ['Phone', selected.Phone], ['Email', selected.Email],
+                  ['Province', selected.Province], ['District', selected.District], ['Address', selected.Address],
+                  ['Employment Type', selected.Employment_Type], ['Join Date', selected.Join_Date],
+                  ['Probation End', selected.Probation_End_Date], ['Probation Status', selected.Probation_Status],
+                  ['Basic Salary', selected.Basic_Salary ? `₭${fmt(Number(selected.Basic_Salary))}` : ''],
+                  ['Bank', `${selected.Bank_Name || ''} - ${selected.Bank_Account_No || ''}`],
                   ['Tax No', selected.Tax_No], ['Social Security', selected.Social_Security_No],
                   ['Emergency Contact', `${selected.Emergency_Contact_Name || ''} (${selected.Emergency_Contact_Phone || ''})`],
-                  ['Year of Service', selected.Year_of_Service ? `${selected.Year_of_Service} years` : ''],
                 ].filter(([_, v]) => v).map(([label, value], i) => (
                   <div key={i} className="p-3 bg-gray-50 rounded-lg">
                     <p className="text-xs text-gray-500 font-medium">{label}</p>
@@ -288,7 +245,7 @@ export default function Employees() {
             <div className="p-6 space-y-6">
               {/* Personal Information */}
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Personal Information</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">Personal Information</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
@@ -335,7 +292,7 @@ export default function Employees() {
 
               {/* Contact Information */}
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Contact Information</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">Contact Information</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
@@ -343,7 +300,7 @@ export default function Employees() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-                    <input type="tel" value={newEmployee.Phone} onChange={e => setNewEmployee({...newEmployee, Phone: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none" />
+                    <input type="tel" value={newEmployee.Phone} onChange={e => setNewEmployee({...newEmployee, Phone: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none" placeholder="+856 20 XXXX XXXX" />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Emergency Contact Name</label>
@@ -358,8 +315,8 @@ export default function Employees() {
 
               {/* Address */}
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Address</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">Address</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Province</label>
                     <input type="text" value={newEmployee.Province} onChange={e => setNewEmployee({...newEmployee, Province: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none" />
@@ -372,7 +329,7 @@ export default function Employees() {
                     <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
                     <input type="text" value={newEmployee.City} onChange={e => setNewEmployee({...newEmployee, City: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none" />
                   </div>
-                  <div className="sm:col-span-2">
+                  <div className="sm:col-span-2 lg:col-span-4">
                     <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
                     <input type="text" value={newEmployee.Address} onChange={e => setNewEmployee({...newEmployee, Address: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none" />
                   </div>
@@ -381,7 +338,7 @@ export default function Employees() {
 
               {/* Employment Details */}
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Employment Details</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">Employment Details</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Department *</label>
@@ -436,5 +393,66 @@ export default function Employees() {
 
               {/* Compensation & Banking */}
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Compensation & Banking</h3>
-                <div className="grid grid-cols-1 sm:grid
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">Compensation & Banking</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Basic Salary (₭)</label>
+                    <input type="number" value={newEmployee.Basic_Salary} onChange={e => setNewEmployee({...newEmployee, Basic_Salary: Number(e.target.value)})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Bank Name</label>
+                    <input type="text" value={newEmployee.Bank_Name} onChange={e => setNewEmployee({...newEmployee, Bank_Name: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none" placeholder="e.g. BCEL, LDB" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Bank Account Name</label>
+                    <input type="text" value={newEmployee.Bank_Account_Name} onChange={e => setNewEmployee({...newEmployee, Bank_Account_Name: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Bank Account No</label>
+                    <input type="text" value={newEmployee.Bank_Account_No} onChange={e => setNewEmployee({...newEmployee, Bank_Account_No: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Tax & Social Security */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">Tax & Social Security</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Tax No</label>
+                    <input type="text" value={newEmployee.Tax_No} onChange={e => setNewEmployee({...newEmployee, Tax_No: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Social Security No</label>
+                    <input type="text" value={newEmployee.Social_Security_No} onChange={e => setNewEmployee({...newEmployee, Social_Security_No: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Additional */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">Additional Information</h3>
+                <div className="grid grid-cols-1 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Photo URL</label>
+                    <input type="text" value={newEmployee.Photo_URL} onChange={e => setNewEmployee({...newEmployee, Photo_URL: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none" placeholder="https://..." />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Remarks</label>
+                    <textarea value={newEmployee.Remarks} onChange={e => setNewEmployee({...newEmployee, Remarks: e.target.value})} rows={3} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none resize-none" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Buttons */}
+              <div className="flex justify-end gap-3 pt-6 border-t border-gray-100">
+                <button onClick={() => { setShowAddModal(false); resetForm(); }} className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
+                <button onClick={handleAddEmployee} className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700">Add Employee</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
