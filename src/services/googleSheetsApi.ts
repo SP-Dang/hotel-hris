@@ -1,26 +1,8 @@
-/**
- * Google Sheets API Service - JSONP Version
- * 
- * Uses JSONP (script tag injection) to bypass CORS restrictions.
- * This works in sandboxed preview environments where fetch() is blocked.
- */
-
-// Hardcode your Google Apps Script URL here for production
-// Replace with your actual deployed URL
+// Google Sheets API Service
 const PRODUCTION_API_URL = 'https://script.google.com/macros/s/AKfycbzCCJI8gdXl-ndEVqvsal2Tj-4z2S1HkJFdtYeQKhH6nmi5yhMxSozWray2CmoGBK6m/exec';
 
 function getApiUrl(): string {
-  // Use localStorage if set (for testing), otherwise use production URL
   return localStorage.getItem('hris_api_url') || PRODUCTION_API_URL;
-}
-
-function getBackendUrl(): string {
-  // In Netlify, use /api routes (redirected to serverless functions via netlify.toml)
-  // In development, use localhost backend
-  if (typeof window !== 'undefined' && window.location.hostname.includes('netlify.app')) {
-    return '/api';  // Netlify serverless functions
-  }
-  return localStorage.getItem('hris_backend_url') || 'http://localhost:3001/api';
 }
 
 export function isConnected(): boolean {
@@ -149,52 +131,12 @@ async function fetchSheetData(sheetName: string): Promise<any> {
 }
 
 /**
- * Make a POST request through the backend server (for write operations)
- */
-async function postViaBackend(action: string, data: Record<string, any>): Promise<any> {
-  const backendUrl = getBackendUrl();
-  
-  if (!backendUrl) {
-    throw new Error('Backend URL not configured. Please set up the backend server.');
-  }
-
-  try {
-    const response = await fetch(`${backendUrl}/${action}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const result = await response.json();
-    
-    if (result && result.error) {
-      throw new Error(result.error);
-    }
-    
-    return result;
-  } catch (error: any) {
-    console.error(`Backend POST failed for ${action}:`, error);
-    throw error;
-  }
-}
-
-// ============================================================
-// PUBLIC API
-// ============================================================
-
-/**
  * POST request for write operations via Netlify proxy
  */
 async function postToSheet(action: string, data: Record<string, any>): Promise<any> {
   // Use Netlify proxy for write operations to avoid CORS issues
   const proxyUrl = 'https://hotel-hris-proxy.netlify.app/.netlify/functions/proxy';
-  
+
   try {
     const response = await fetch(proxyUrl, {
       method: 'POST',
@@ -229,7 +171,7 @@ export const GoogleSheetsAPI = {
     return fetchWithJsonp('getUser', { email });
   },
   async updateLoginTracking(email: string) {
-    return postViaBackend('updateLoginTracking', { email });
+    return postToSheet('updateLoginTracking', { email });
   },
   
   // Read operations (JSONP)
@@ -253,75 +195,75 @@ export const GoogleSheetsAPI = {
   async getHolidays() { return fetchSheetData('04_Holidays'); },
   async getUserRoles() { return fetchSheetData('User_Roles'); },
   
-  // Write operations (POST via backend)
+  // Write operations (POST via Netlify proxy)
   async addEmployee(rowData: Record<string, any>) {
-    return postViaBackend('addEmployee', { rowData });
+    return postToSheet('addEmployee', { rowData });
   },
   async updateEmployee(rowIndex: number, rowData: Record<string, any>) {
-    return postViaBackend('updateEmployee', { rowIndex, rowData });
+    return postToSheet('updateEmployee', { rowIndex, rowData });
   },
   async deleteEmployee(rowIndex: number) {
-    return postViaBackend('deleteEmployee', { rowIndex });
+    return postToSheet('deleteEmployee', { rowIndex });
   },
   
   async addLeaveRequest(rowData: Record<string, any>) {
-    return postViaBackend('addLeaveRequest', { rowData });
+    return postToSheet('addLeaveRequest', { rowData });
   },
   async updateLeaveRequest(rowIndex: number, rowData: Record<string, any>) {
-    return postViaBackend('updateLeaveRequest', { rowIndex, rowData });
+    return postToSheet('updateLeaveRequest', { rowIndex, rowData });
   },
   async approveLeave(requestId: string, approvedBy: string, notes?: string) {
-    return postViaBackend('approveLeave', { requestId, approvedBy, notes });
+    return postToSheet('approveLeave', { requestId, approvedBy, notes });
   },
   async rejectLeave(requestId: string, rejectedBy: string, reason: string) {
-    return postViaBackend('rejectLeave', { requestId, rejectedBy, reason });
+    return postToSheet('rejectLeave', { requestId, rejectedBy, reason });
   },
   
   async addAttendance(rowData: Record<string, any>) {
-    return postViaBackend('addAttendance', { rowData });
+    return postToSheet('addAttendance', { rowData });
   },
   async updateAttendance(rowIndex: number, rowData: Record<string, any>) {
-    return postViaBackend('updateAttendance', { rowIndex, rowData });
+    return postToSheet('updateAttendance', { rowIndex, rowData });
   },
   
   async updatePayroll(rowIndex: number, rowData: Record<string, any>) {
-    return postViaBackend('updatePayroll', { rowIndex, rowData });
+    return postToSheet('updatePayroll', { rowIndex, rowData });
   },
   
   async addDocument(rowData: Record<string, any>) {
-    return postViaBackend('addDocument', { rowData });
+    return postToSheet('addDocument', { rowData });
   },
   async updateDocument(rowIndex: number, rowData: Record<string, any>) {
-    return postViaBackend('updateDocument', { rowIndex, rowData });
+    return postToSheet('updateDocument', { rowIndex, rowData });
   },
   
   async addTraining(rowData: Record<string, any>) {
-    return postViaBackend('addTraining', { rowData });
+    return postToSheet('addTraining', { rowData });
   },
   async updateTraining(rowIndex: number, rowData: Record<string, any>) {
-    return postViaBackend('updateTraining', { rowIndex, rowData });
+    return postToSheet('updateTraining', { rowIndex, rowData });
   },
   
   async addAsset(rowData: Record<string, any>) {
-    return postViaBackend('addAsset', { rowData });
+    return postToSheet('addAsset', { rowData });
   },
   async updateAsset(rowIndex: number, rowData: Record<string, any>) {
-    return postViaBackend('updateAsset', { rowIndex, rowData });
+    return postToSheet('updateAsset', { rowIndex, rowData });
   },
   
   async addLog(module: string, action: string, userId: string, details?: string) {
-    return postViaBackend('addLog', { module, action, userId, details });
+    return postToSheet('addLog', { module, action, userId, details });
   },
   
   // Generic operations
   async addRow(sheetName: string, rowData: Record<string, any>) {
-    return postViaBackend('addRow', { sheet: sheetName, rowData });
+    return postToSheet('addRow', { sheet: sheetName, rowData });
   },
   async updateRow(sheetName: string, rowIndex: number, rowData: Record<string, any>) {
-    return postViaBackend('updateRow', { sheet: sheetName, rowIndex, rowData });
+    return postToSheet('updateRow', { sheet: sheetName, rowIndex, rowData });
   },
   async deleteRow(sheetName: string, rowIndex: number) {
-    return postViaBackend('deleteRow', { sheet: sheetName, rowIndex });
+    return postToSheet('deleteRow', { sheet: sheetName, rowIndex });
   },
 };
 
