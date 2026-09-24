@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Search, Plus, Eye, Edit2, Download, X, Wifi, WifiOff } from 'lucide-react';
 import { employees as mockEmployees, departments as mockDepartments } from '../data/mockData';
 import { useSheetData, useApiStatus } from '../hooks/useSheetData';
-
 import { GoogleSheetsAPI } from '../services/googleSheetsApi';
 
 export default function Employees() {
@@ -16,16 +15,53 @@ export default function Employees() {
   const [selected, setSelected] = useState<any>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [newEmployee, setNewEmployee] = useState<any>({
+    // Personal Information
+    Title: 'Mr',
     First_Name: '',
     Last_Name: '',
-    Email: '',
+    Gender: 'Male',
+    Date_of_Birth: '',
+    Nationality: 'Lao',
+    Marital_Status: 'Single',
+    
+    // Contact Information
     Phone: '',
+    Email: '',
+    Emergency_Contact_Name: '',
+    Emergency_Contact_Phone: '',
+    
+    // Address
+    Province: '',
+    District: '',
+    City: '',
+    Address: '',
+    
+    // Employment Details
     Department_ID: '',
-    Position_Name: '',
+    Position_ID: '',
+    Supervisor_Employee_ID: '',
     Employment_Type: 'Full-Time',
     Employment_Status: 'Active',
-    Basic_Salary: 0,
     Join_Date: new Date().toISOString().split('T')[0],
+    Probation_End_Date: '',
+    Confirmation_Date: '',
+    Resignation_Date: '',
+    
+    // Compensation
+    Basic_Salary: 0,
+    
+    // Banking
+    Bank_Name: '',
+    Bank_Account_Name: '',
+    Bank_Account_No: '',
+    
+    // Tax & Social Security
+    Tax_No: '',
+    Social_Security_No: '',
+    
+    // Additional
+    Photo_URL: '',
+    Remarks: '',
   });
 
   const filtered = employeesData.filter((e: any) => {
@@ -44,6 +80,73 @@ export default function Employees() {
   };
 
   const fmt = (n: number) => new Intl.NumberFormat('en-LA').format(n);
+
+  const handleAddEmployee = async () => {
+    // Validation
+    if (!newEmployee.First_Name || !newEmployee.Last_Name || !newEmployee.Email || !newEmployee.Department_ID) {
+      alert('Please fill in all required fields (First Name, Last Name, Email, Department)');
+      return;
+    }
+
+    try {
+      // Generate Employee_ID and Employee_Code
+      const timestamp = Date.now();
+      const employeeData = {
+        ...newEmployee,
+        Employee_ID: `EMP${timestamp}`,
+        Employee_Code: `${newEmployee.Department_ID}-${timestamp.toString().slice(-4)}`,
+        Full_Name: `${newEmployee.First_Name} ${newEmployee.Last_Name}`,
+        Department_Name: departmentsData.find((d: any) => d.Department_ID === newEmployee.Department_ID)?.Department_Name || '',
+        Position_Name: newEmployee.Position_ID || '',
+        Age: newEmployee.Date_of_Birth ? Math.floor((Date.now() - new Date(newEmployee.Date_of_Birth).getTime()) / 31557600000) : 0,
+        Year_of_Service: newEmployee.Join_Date ? Math.floor((Date.now() - new Date(newEmployee.Join_Date).getTime()) / 31557600000) : 0,
+        Probation_Status: newEmployee.Probation_End_Date ? 
+          (new Date(newEmployee.Probation_End_Date) > new Date() ? 'On Probation' : 'Confirmed') : 'Confirmed',
+      };
+
+      await GoogleSheetsAPI.addEmployee(employeeData);
+      alert('Employee added successfully!');
+      setShowAddModal(false);
+      
+      // Reset form
+      setNewEmployee({
+        Title: 'Mr',
+        First_Name: '',
+        Last_Name: '',
+        Gender: 'Male',
+        Date_of_Birth: '',
+        Nationality: 'Lao',
+        Marital_Status: 'Single',
+        Phone: '',
+        Email: '',
+        Emergency_Contact_Name: '',
+        Emergency_Contact_Phone: '',
+        Province: '',
+        District: '',
+        City: '',
+        Address: '',
+        Department_ID: '',
+        Position_ID: '',
+        Supervisor_Employee_ID: '',
+        Employment_Type: 'Full-Time',
+        Employment_Status: 'Active',
+        Join_Date: new Date().toISOString().split('T')[0],
+        Probation_End_Date: '',
+        Confirmation_Date: '',
+        Resignation_Date: '',
+        Basic_Salary: 0,
+        Bank_Name: '',
+        Bank_Account_Name: '',
+        Bank_Account_No: '',
+        Tax_No: '',
+        Social_Security_No: '',
+        Photo_URL: '',
+        Remarks: '',
+      });
+    } catch (error) {
+      alert('Failed to add employee: ' + (error as Error).message);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -177,104 +280,161 @@ export default function Employees() {
 
       {showAddModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowAddModal(false)}>
-          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="p-6 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white z-10">
               <h2 className="text-xl font-bold text-gray-900">Add New Employee</h2>
               <button onClick={() => setShowAddModal(false)} className="p-2 hover:bg-gray-100 rounded-lg"><X size={20} /></button>
             </div>
-            <div className="p-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
-                  <input type="text" value={newEmployee.First_Name} onChange={e => setNewEmployee({...newEmployee, First_Name: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none" required />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
-                  <input type="text" value={newEmployee.Last_Name} onChange={e => setNewEmployee({...newEmployee, Last_Name: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none" required />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
-                  <input type="email" value={newEmployee.Email} onChange={e => setNewEmployee({...newEmployee, Email: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none" required />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-                  <input type="tel" value={newEmployee.Phone} onChange={e => setNewEmployee({...newEmployee, Phone: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Department *</label>
-                  <select value={newEmployee.Department_ID} onChange={e => setNewEmployee({...newEmployee, Department_ID: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none bg-white" required>
-                    <option value="">Select Department</option>
-                    {departmentsData.map((d: any) => <option key={d.Department_ID} value={d.Department_ID}>{d.Department_Name}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Position *</label>
-                  <input type="text" value={newEmployee.Position_Name} onChange={e => setNewEmployee({...newEmployee, Position_Name: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none" required />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Employment Type</label>
-                  <select value={newEmployee.Employment_Type} onChange={e => setNewEmployee({...newEmployee, Employment_Type: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none bg-white">
-                    <option value="Full-Time">Full-Time</option>
-                    <option value="Part-Time">Part-Time</option>
-                    <option value="Contract">Contract</option>
-                    <option value="Intern">Intern</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                  <select value={newEmployee.Employment_Status} onChange={e => setNewEmployee({...newEmployee, Employment_Status: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none bg-white">
-                    <option value="Active">Active</option>
-                    <option value="On Probation">On Probation</option>
-                    <option value="Resigned">Resigned</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Basic Salary (₭)</label>
-                  <input type="number" value={newEmployee.Basic_Salary} onChange={e => setNewEmployee({...newEmployee, Basic_Salary: Number(e.target.value)})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Join Date *</label>
-                  <input type="date" value={newEmployee.Join_Date} onChange={e => setNewEmployee({...newEmployee, Join_Date: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none" required />
+            <div className="p-6 space-y-6">
+              {/* Personal Information */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Personal Information</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                    <select value={newEmployee.Title} onChange={e => setNewEmployee({...newEmployee, Title: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none">
+                      <option value="Mr">Mr</option>
+                      <option value="Ms">Ms</option>
+                      <option value="Mrs">Mrs</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
+                    <input type="text" value={newEmployee.First_Name} onChange={e => setNewEmployee({...newEmployee, First_Name: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none" required />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
+                    <input type="text" value={newEmployee.Last_Name} onChange={e => setNewEmployee({...newEmployee, Last_Name: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none" required />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
+                    <select value={newEmployee.Gender} onChange={e => setNewEmployee({...newEmployee, Gender: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none">
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Date of Birth</label>
+                    <input type="date" value={newEmployee.Date_of_Birth} onChange={e => setNewEmployee({...newEmployee, Date_of_Birth: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Nationality</label>
+                    <input type="text" value={newEmployee.Nationality} onChange={e => setNewEmployee({...newEmployee, Nationality: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Marital Status</label>
+                    <select value={newEmployee.Marital_Status} onChange={e => setNewEmployee({...newEmployee, Marital_Status: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none">
+                      <option value="Single">Single</option>
+                      <option value="Married">Married</option>
+                      <option value="Divorced">Divorced</option>
+                      <option value="Widowed">Widowed</option>
+                    </select>
+                  </div>
                 </div>
               </div>
-              <div className="flex justify-end gap-3 mt-6 pt-6 border-t border-gray-100">
-                <button onClick={() => setShowAddModal(false)} className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
-                <button onClick={async () => {
-                  if (!newEmployee.First_Name || !newEmployee.Last_Name || !newEmployee.Email || !newEmployee.Department_ID || !newEmployee.Position_Name) {
-                    alert('Please fill in all required fields');
-                    return;
-                  }
-                  try {
-                    const employeeData = {
-                      ...newEmployee,
-                      Full_Name: `${newEmployee.First_Name} ${newEmployee.Last_Name}`,
-                      Employee_ID: `EMP${Date.now()}`,
-                      Employee_Code: `${newEmployee.Department_ID}-${Date.now().toString().slice(-4)}`,
-                    };
-                    await GoogleSheetsAPI.addEmployee(employeeData);
-                    alert('Employee added successfully!');
-                    setShowAddModal(false);
-                    setNewEmployee({
-                      First_Name: '',
-                      Last_Name: '',
-                      Email: '',
-                      Phone: '',
-                      Department_ID: '',
-                      Position_Name: '',
-                      Employment_Type: 'Full-Time',
-                      Employment_Status: 'Active',
-                      Basic_Salary: 0,
-                      Join_Date: new Date().toISOString().split('T')[0],
-                    });
-                  } catch (error) {
-                    alert('Failed to add employee: ' + (error as Error).message);
-                  }
-                }} className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700">Add Employee</button>
+
+              {/* Contact Information */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Contact Information</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                    <input type="email" value={newEmployee.Email} onChange={e => setNewEmployee({...newEmployee, Email: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none" required />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                    <input type="tel" value={newEmployee.Phone} onChange={e => setNewEmployee({...newEmployee, Phone: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Emergency Contact Name</label>
+                    <input type="text" value={newEmployee.Emergency_Contact_Name} onChange={e => setNewEmployee({...newEmployee, Emergency_Contact_Name: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Emergency Contact Phone</label>
+                    <input type="tel" value={newEmployee.Emergency_Contact_Phone} onChange={e => setNewEmployee({...newEmployee, Emergency_Contact_Phone: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none" />
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
+
+              {/* Address */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Address</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Province</label>
+                    <input type="text" value={newEmployee.Province} onChange={e => setNewEmployee({...newEmployee, Province: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">District</label>
+                    <input type="text" value={newEmployee.District} onChange={e => setNewEmployee({...newEmployee, District: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
+                    <input type="text" value={newEmployee.City} onChange={e => setNewEmployee({...newEmployee, City: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none" />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                    <input type="text" value={newEmployee.Address} onChange={e => setNewEmployee({...newEmployee, Address: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Employment Details */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Employment Details</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Department *</label>
+                    <select value={newEmployee.Department_ID} onChange={e => setNewEmployee({...newEmployee, Department_ID: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none bg-white" required>
+                      <option value="">Select Department</option>
+                      {departmentsData.map((d: any) => <option key={d.Department_ID} value={d.Department_ID}>{d.Department_Name}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Position ID</label>
+                    <input type="text" value={newEmployee.Position_ID} onChange={e => setNewEmployee({...newEmployee, Position_ID: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Supervisor Employee ID</label>
+                    <input type="text" value={newEmployee.Supervisor_Employee_ID} onChange={e => setNewEmployee({...newEmployee, Supervisor_Employee_ID: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Employment Type</label>
+                    <select value={newEmployee.Employment_Type} onChange={e => setNewEmployee({...newEmployee, Employment_Type: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none bg-white">
+                      <option value="Full-Time">Full-Time</option>
+                      <option value="Part-Time">Part-Time</option>
+                      <option value="Contract">Contract</option>
+                      <option value="Intern">Intern</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                    <select value={newEmployee.Employment_Status} onChange={e => setNewEmployee({...newEmployee, Employment_Status: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none bg-white">
+                      <option value="Active">Active</option>
+                      <option value="On Probation">On Probation</option>
+                      <option value="Resigned">Resigned</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Join Date *</label>
+                    <input type="date" value={newEmployee.Join_Date} onChange={e => setNewEmployee({...newEmployee, Join_Date: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none" required />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Probation End Date</label>
+                    <input type="date" value={newEmployee.Probation_End_Date} onChange={e => setNewEmployee({...newEmployee, Probation_End_Date: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Confirmation Date</label>
+                    <input type="date" value={newEmployee.Confirmation_Date} onChange={e => setNewEmployee({...newEmployee, Confirmation_Date: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Resignation Date</label>
+                    <input type="date" value={newEmployee.Resignation_Date} onChange={e => setNewEmployee({...newEmployee, Resignation_Date: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Compensation & Banking */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Compensation & Banking</h3>
+                <div className="grid grid-cols-1 sm:grid
