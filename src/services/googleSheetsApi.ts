@@ -142,24 +142,18 @@ async function fetchSheetData(sheetName: string): Promise<any> {
 // ============================================================
 // PUBLIC API
 // ============================================================
-
 /**
- * POST request for write operations
- * Note: This requires CORS to be properly configured on the Apps Script
+ * POST request for write operations via Netlify proxy
  */
 async function postToSheet(action: string, data: Record<string, any>): Promise<any> {
-  const apiUrl = getApiUrl();
-  
-  if (!apiUrl) {
-    throw new Error('No API URL configured');
-  }
+  // Use Netlify proxy to avoid CORS issues
+  const proxyUrl = 'https://hotel-hris-proxy.netlify.app/.netlify/functions/proxy';
 
   try {
-    const response = await fetch(apiUrl, {
+    const response = await fetch(proxyUrl, {
       method: 'POST',
-      mode: 'cors',
       headers: {
-        'Content-Type': 'text/plain;charset=utf-8',
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({ action, ...data }),
     });
