@@ -14,9 +14,9 @@ export function useSheetData(sheetName: string) {
       const result = await GoogleSheetsAPI.getSheetData(sheetName);
       
       // Check if we got valid data
-      if (result && result.data && Array.isArray(result.data)) {
-        setData(result.data);
-        console.log(`✅ Successfully fetched ${sheetName}: ${result.data.length} records`);
+      if (result && result.rows && Array.isArray(result.rows)) {
+  setData(result.rows);
+  console.log(`✅ Successfully fetched ${sheetName}: ${result.rows.length} records`);
       } else {
         setData([]);
         console.warn(`⚠️ No data for ${sheetName}`);
