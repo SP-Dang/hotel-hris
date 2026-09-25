@@ -1,13 +1,11 @@
 import { useState } from 'react';
-import { Search, Plus, Eye, Edit2, Download, X, Wifi, WifiOff } from 'lucide-react';
-import { employees as mockEmployees, departments as mockDepartments } from '../data/mockData';
-import { useSheetData, useApiStatus } from '../hooks/useSheetData';
+import { Search, Plus, Eye, Edit2, Download, X, Loader2, AlertCircle } from 'lucide-react';
+import { useSheetData } from '../hooks/useSheetData';
 import { GoogleSheetsAPI } from '../services/googleSheetsApi';
 
 export default function Employees() {
-  const { connected } = useApiStatus();
-  const {  employeesData, isLive, loading } = useSheetData('10_Employees', mockEmployees);
-  const { data: departmentsData } = useSheetData('02_Departments', mockDepartments);
+  const {  employeesData, loading: loadingEmployees, error: errorEmployees, refetch: refetchEmployees } = useSheetData('10_Employees');
+  const {  departmentsData, loading: loadingDepartments } = useSheetData('02_Departments');
 
   const [searchTerm, setSearchTerm] = useState('');
   const [deptFilter, setDeptFilter] = useState('All');
@@ -18,6 +16,7 @@ export default function Employees() {
   // Safety check - use empty array if data is undefined
   const safeEmployeesData = employeesData || [];
   const safeDepartmentsData = departmentsData || [];
+
   const [newEmployee, setNewEmployee] = useState<any>({
     Title: 'Mr',
     First_Name: '',
@@ -104,10 +103,43 @@ export default function Employees() {
       alert('Employee added successfully!');
       setShowAddModal(false);
       resetForm();
+      refetchEmployees(); // Refresh the data
     } catch (error) {
       alert('Failed to add employee: ' + (error as Error).message);
     }
   };
+
+  // Loading state
+  if (loadingEmployees || loadingDepartments) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 animate-spin text-indigo-600 mx-auto mb-4" />
+          <p className="text-gray-600 font-medium">Loading employee data...</p>
+          <p className="text-gray-400 text-sm mt-2">Fetching from Google Sheets</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (errorEmployees) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center max-w-md">
+          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Failed to Load Employees</h3>
+          <p className="text-gray-600 mb-4">{errorEmployees}</p>
+          <button
+            onClick={refetchEmployees}
+            className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -117,17 +149,10 @@ export default function Employees() {
           <p className="text-gray-500 text-sm mt-1">10_Employees tab • {safeEmployeesData.length} records</p>
         </div>
         <div className="flex items-center gap-2">
-          {isLive ? (
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 border border-green-200 rounded-full">
-              <Wifi size={14} className="text-green-600" />
-              <span className="text-xs font-medium text-green-700">Live Data</span>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-full">
-              <WifiOff size={14} className="text-gray-500" />
-              <span className="text-xs font-medium text-gray-600">Sample Data</span>
-            </div>
-          )}
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 border border-green-200 rounded-full">
+            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+            <span className="text-xs font-medium text-green-700">Live Data</span>
+          </div>
           <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"><Download size={16} />Export</button>
           <button onClick={() => setShowAddModal(true)} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700"><Plus size={16} />Add Employee</button>
         </div>
